@@ -10,14 +10,14 @@ bpe_dir=/opt/data/private/data/llama/tokenizer.model
 world_size=1
 
 
-torchrun --master_port 29504 --nproc_per_node $world_size examples_nlg/llama/src/generate.py $data_dir \
-    --user-dir examples_nlg/llama/src \
-    --task llama_translation \
+torchrun --master_port 29504 --nproc_per_node $world_size alpaca_lora/src/generate.py $data_dir \
+    --user-dir alpaca_lora/src \
+    --task llama_task \
     --arch llama_7b \
     -s $src -t $tgt \
     --gen-subset train \
     --bpe 'sentencepiece' --sentencepiece-model $bpe_dir \
-    --path $save_dir/checkpoint1.pt \
+    --path $save_dir/checkpoint3.pt \
     --fp16 \
     --seed 1 \
     --required-batch-size-multiple 1 \

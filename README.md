@@ -10,13 +10,44 @@ pip install fairseq
 pip install fairscale
 ```
 
-## Training step:
+[Optinal] We can install sentencepiece from [official repo](https://github.com/google/sentencepiece) to process data or hack for your specific task.
+
+```
+git clone https://github.com/google/sentencepiece.git 
+cd sentencepiece
+mkdir build
+cd build
+cmake ..
+make -j $(nproc)
+make install
+```
+
+## Prepare Model and Data:
+
+1. Download the llama checkpoint from official repo [llama](https://github.com/facebookresearch/llama), or [unofficial repo](https://github.com/shawwn/llama-dl)
+
+2. Prepare the checkpoint to fairseq toolkit:
+    ```
+    python alpaca_lora/scripts/process_llama_ckpt.py --model-dir [your llama dir] --model-file [your llama file]
+    ```
+    after that, we can get new checkpoint file ``model.pt`` in [your llama dir].
+
+3. Download Alpaca training file [alpaca_data.json](https://github.com/tatsu-lab/stanford_alpaca/blob/main/alpaca_data.json), which contains 52K instruction-following data for fine-tuning the Alpaca model.
+
+4. Prepare the training data for fairseq toolkit:
+    
+    Set *DATA* path in following scripts for processed data:
+    ```
+    bash alpaca_lora/scripts/prepare_llama_training_data.sh
+    ```
+
+## Training Step:
 
 ```
 bash alpaca_lora/scripts/run_train_alpaca.sh
 ```
 
-## Infernce step:
+## Infernce Step:
 We support the batch-level inference:
 
 ```

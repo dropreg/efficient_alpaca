@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Tuple
 import os
 from omegaconf import II
 import math
+import logging
 
 import torch
 from torch import Tensor, nn
@@ -31,6 +32,7 @@ from fairscale.nn.model_parallel.layers import (
     ColumnParallelLinear,
 )
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class LLaMAConfig(FairseqDataclass):
@@ -88,6 +90,7 @@ class LLaMA(BaseFairseqModel):
         
     @classmethod
     def initialize_model_parallel(cls):
+        # logger.info("llama model init process group")
         # torch.distributed.init_process_group("nccl")
         mpu.initialize_model_parallel(torch.distributed.get_world_size())
 
