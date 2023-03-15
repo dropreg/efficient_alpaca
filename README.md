@@ -1,5 +1,8 @@
+<p align="center" width="100%">
+<img src="efficient_alpaca_logo.PNG" alt="Efficient-Alpaca" style="width: 50%; min-width: 300px; display: block; margin: auto;">
+</p>
 
-# Alpaca with LoRA
+# Efficient Alpaca
 
 This repository aim to reproduce the Stanford Alpaca using low-rank adaptation (LoRA) based on fairseq toolkit. 
 
