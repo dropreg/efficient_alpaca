@@ -9,9 +9,19 @@ This repository aim to reproduce the Stanford Alpaca using low-rank adaptation (
 + This project only save LoRA parameters (only 37M) for Alpaca model.
 + LoRA efficient tuning only cost 30 minutes for 1 epoch.
 
-
 **************************** Updates ****************************
 + 3/15 We released our model checkpoints !
+
+## Web Interface:
+We support [Gradio](https://gradio.app/) website interface:
+
+```
+bash  alpaca_lora/scripts/run_webapp.sh
+```
+
+<p align="center" width="100%">
+<img src="webapp.PNG" alt="Examples" style="width: 80%; min-width: 300px; display: block; margin: auto;">
+</p>
 
 ## Model List
 Our released models are listed as following. 
