@@ -84,17 +84,13 @@ bash alpaca_lora/scripts/run_inf_alpaca.sh
 
 3. **Question**: 请讲一个武侠故事.
 
-    **Answer**: 
-    ```
+    **Answer**:
     The legendary warrior Guan Yu Once upon a time, there was a legendary warrior named Guan Yu. He was a highly skilled fighter and commander and was known for his great bravery and loyalty. He was the loyal servant of Emperor Liu Bei, and fought in the Three Kingdoms civil war alongside him. He was brave enough to challenge the powerful enemy warriors, and eventually helped Liu Bei's army defeat the Wei Kingdom, the strongest of the three kingdoms. Guan Yu was a great warrior and a hero in Chinese history.
-    ```
 
 4. **Question**: what is an alpaca? how is it different form a llama?
 
-    **Answer**: 
-    ```
+    **Answer**:
     Alpacas and llamas are both members of the Camelidae family. They are both herbivorous mammals that are domesticated for their coats, but they are distinctly different species. Llamas are generally larger than alpacas and have more pronounced spiral horns, while alpacas have smaller horns and more delicate coats. Alpacas also have smaller teeth and a narrower neck than llamas, and they are able to reproduced year-round. Llamas are also unable to reproduce during the winter months and have a more social behavior than alpacas.
-    ```
 
 5. **Question**: write a e-mail to congratulate Lee and mention that you are exited about meeting all of them in person.
 
@@ -102,7 +98,9 @@ bash alpaca_lora/scripts/run_inf_alpaca.sh
     ```
     Dear Lee,
 
-    I want to congratulate you on your success and I'm looking forward to meeting you and the other team members in person. It's exciting to see the progress you've made and I'm sure the hard work you have put in has paid off. I'm very proud of you and I'm looking forward to meeting you in person and seeing all of your progress.
+    I want to congratulate you on your success and I'm looking forward to meeting you and the other team members in person. 
+    It's exciting to see the progress you've made and I'm sure the hard work you have put in has paid off. 
+    I'm very proud of you and I'm looking forward to meeting you in person and seeing all of your progress.
 
     Sincerely,
     [Your Name]
@@ -110,10 +108,8 @@ bash alpaca_lora/scripts/run_inf_alpaca.sh
 
 5. **Question**: write a well-thought our abstract for a machine learning parper that proves that 42 is the optimal seed for training neural network.
 
-    **Answer**: 
-    ```
+    **Answer**:
     This paper investigates the effect of different seeds on the performance of neural networks. Through experiments, we demonstrate that the optimal seed is 42, which leads to the best performance on a wide range of tasks. We analyze the effects of different seeds on the model's accuracy, robustness, and other metrics. Our results show that 42 is the best seed for neural networks, and we discuss the implications of this finding.
-    ```
 
 
 ## Reference
