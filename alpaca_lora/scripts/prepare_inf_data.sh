@@ -1,22 +1,21 @@
 SRC=src
 TGT=tgt
 
-DATA=/opt/data/private/data/nmt_data/llama_data/inference
+DATA=/opt/data/private/data/llama/llama_raw/inf/
 SPM=/opt/data/private/code/sentencepiece/build/src/spm_encode
 MODEL=/opt/data/private/data/llama/tokenizer.model
 
-${SPM} --model=${MODEL} < ${DATA}/train.${SRC} > ${DATA}/train.spm.${SRC}
-${SPM} --model=${MODEL} < ${DATA}/train.${TGT} > ${DATA}/train.spm.${TGT}
+${SPM} --model=${MODEL} < ${DATA}/test.${SRC} > ${DATA}/test.spm.${SRC}
 
-python examples_nlg/llama/src/preprocess.py \
-  --user-dir examples_nlg/llama/src \
-  --task llama_translation \
+cp ${DATA}/test.spm.${SRC} ${DATA}/test.spm.${TGT}
+
+python alpaca_lora/src/preprocess.py \
+  --user-dir alpaca_lora/src \
+  --task llama_task \
   --source-lang ${SRC} \
   --target-lang ${TGT} \
-  --trainpref ${DATA}/train.spm \
+  --testpref ${DATA}/test.spm \
   --destdir ${DATA}/data-bin \
-  --thresholdtgt 0 \
-  --thresholdsrc 0 \
-  --srcdict /opt/data/private/data/llama/dict.txt \
-  --tgtdict /opt/data/private/data/llama/dict.txt \
+  --srcdict alpaca_lora/scripts/dict.txt \
+  --tgtdict alpaca_lora/scripts/dict.txt \
   --workers 40 \

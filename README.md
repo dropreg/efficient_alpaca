@@ -3,6 +3,10 @@
 
 This repository aim to reproduce the Stanford Alpaca using low-rank adaptation (LoRA) based on fairseq toolkit. 
 
+Con:
+
+1. This project only save LoRA parameters (only 37M) for Aplaca model.
+2. LoRA efficient tuning only cost 30 minutes for 1 epoch.
 
 ## Setup
 ```
@@ -42,15 +46,25 @@ make install
     ```
 
 ## Training Step:
+Please edit **model** and **data** path for training scripts before runing it.
 
-```
+``` 
+# data_dir=llama_data_dir
+# llama_dir=llama_model_dir
 bash alpaca_lora/scripts/run_train_alpaca.sh
 ```
 
 ## Infernce Step:
-We support the batch-level inference:
+Please prepare the test file like [test.src]().
+
+We have to load llama-7b model for inference scripts using command ```--llama-model-inf $llama_dir```.
 
 ```
+# prepare data
+bash alpaca_lora/scripts/prepare_inf_data.sh
+# run inference
+# reset the ckpt path 
+# save_dir=alpaca_lora_model_dir
 bash alpaca_lora/scripts/run_inf_alpaca.sh
 ```
 

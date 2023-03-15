@@ -34,9 +34,12 @@ from fairscale.nn.model_parallel.layers import (
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class LLaMAConfig(FairseqDataclass):
-
+    lora_tuning: bool = field(
+        default=False, metadata={"help": "if using lora tuning"},
+    )
     dropout: float = field(default=0.1, metadata={"help": "dropout probability"})
     attention_dropout: float = field(
         default=0.0, metadata={"help": "dropout probability for attention weights"}
@@ -52,29 +55,33 @@ class LLaMAConfig(FairseqDataclass):
         default=8, metadata={"help": "num decoder attention heads"}
     )
     max_target_positions: Optional[int] = II("task.max_target_positions")
-    share_all_embeddings: bool = field(
-        default=False,
-        metadata={
-            "help": "share encoder, decoder and output embeddings (requires shared dictionary and embed dim)"
-        },
-    )
+
 
 @register_model("llama", dataclass=LLaMAConfig)
 class LLaMA(BaseFairseqModel):
     
-    def __init__(self, decoder):
+    def __init__(self, decoder, lora_tuning):
         super().__init__()
 
         self.decoder = decoder
-        self.mark_only_lora_as_trainable()
-        
+        self.lora_tuning = lora_tuning
+
+        logger.info('model tuning method {}'.format(self.lora_tuning))
+        if self.lora_tuning:
+            self.mark_only_lora_as_trainable()
+
+        self.llama_model_inf = None
+
+    def set_llama_model_inf(self, llama_model_inf):
+        self.llama_model_inf = llama_model_inf
+
     def mark_only_lora_as_trainable(self) -> None:
         for n, p in self.named_parameters():
             if 'lora' not in n:
                 p.requires_grad = False
             else:
                 p.requires_grad = True
-            
+
     @classmethod
     def build_model(cls, args, task):
         """Build a new model instance."""
@@ -84,16 +91,23 @@ class LLaMA(BaseFairseqModel):
             args, task.target_dictionary, args.decoder_embed_dim
         )
         decoder = LLaMaTransformer(
-            args, task.target_dictionary, embed_tokens
+            args, task.target_dictionary, embed_tokens, args.lora_tuning
         )
-        return cls(decoder) 
+        return cls(decoder, args.lora_tuning) 
         
     @classmethod
     def initialize_model_parallel(cls):
-        # logger.info("llama model init process group")
-        torch.distributed.init_process_group("nccl")
-        mpu.initialize_model_parallel(torch.distributed.get_world_size())
-
+        logger.info("llama model init process group")
+        if not torch.distributed.is_available():
+            torch.distributed.init_process_group("nccl")        
+        try:
+            mpu.initialize_model_parallel(torch.distributed.get_world_size())
+        except:
+            logger.info("Default process group has not been initialized")
+            torch.distributed.init_process_group("nccl")
+            mpu.initialize_model_parallel(torch.distributed.get_world_size())
+            pass
+            
     @classmethod
     def build_embedding(cls, args, dictionary, embed_dim, path=None):
         
@@ -255,9 +269,15 @@ class LLaMA(BaseFairseqModel):
 
     def upgrade_state_dict_named(self, state_dict, name):
         
+        if self.llama_model_inf:
+            logger.info("load llama model from {}".format(self.llama_model_inf))
+            with open(self.llama_model_inf, "rb") as f:
+                llama_state_dict = torch.load(f, map_location=torch.device("cuda"))['model']
+            for k in list(llama_state_dict.keys()):
+                state_dict[k] = llama_state_dict[k]
+                    
         if "decoder.embed_tokens.weight" not in state_dict.keys():
             for k in list(state_dict.keys()):
-                
                 if "tok_embeddings.weight" in k:
                     state_dict["decoder.embed_tokens.weight"] = state_dict[k]
                     state_dict["decoder.embed_tokens.weight"] = torch.cat(
@@ -313,7 +333,7 @@ class LLaMA(BaseFairseqModel):
 
 class LLaMaTransformer(nn.Module):
 
-    def __init__(self, cfg, tgt_dict, embed_tokens):
+    def __init__(self, cfg, tgt_dict, embed_tokens, lora_tuning):
         super().__init__()
         
         self.tgt_dict = tgt_dict
@@ -325,13 +345,14 @@ class LLaMaTransformer(nn.Module):
 
         self.pad = self.tgt_dict.pad()
 
+        self.lora_tuning = lora_tuning
         # init layers
         self.embed_tokens = embed_tokens
 
         self.layers = torch.nn.ModuleList()
         self.layers.extend(
             [
-                LLaMATransformerLayer(cfg)
+                LLaMATransformerLayer(cfg, self.lora_tuning)
                 for _ in range(self.num_layers)
             ]
         )
@@ -345,6 +366,7 @@ class LLaMaTransformer(nn.Module):
             self.embed_dim // self.num_heads, self.max_target_positions * 2
         )
         self._future_mask = torch.empty(0)
+
 
     def precompute_freqs_cis(self, dim: int, end: int, theta: float = 10000.0):
         freqs = 1.0 / (theta ** (torch.arange(0, dim, 2)[: (dim // 2)].float() / dim))
@@ -431,14 +453,15 @@ class LLaMaTransformer(nn.Module):
          
 class LLaMATransformerLayer(nn.Module):
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, lora_tuning):
         super().__init__()
 
         self.embed_dim = cfg.decoder_embed_dim
         self.num_heads = cfg.decoder_attention_heads
         self.ffn_embed_dim = cfg.decoder_ffn_embed_dim
+        self.lora_tuning = lora_tuning
 
-        self.attention = LLaMAAttention(self.num_heads, self.embed_dim)
+        self.attention = LLaMAAttention(self.num_heads, self.embed_dim, self.lora_tuning)
         self.feed_forward = LLaMAFeedForward(self.embed_dim, self.ffn_embed_dim)
 
         self.attention_norm = RMSNorm(self.embed_dim)
@@ -487,13 +510,14 @@ class RMSNorm(torch.nn.Module):
 
 class LLaMAAttention(nn.Module):
 
-    def __init__(self, num_heads, embed_dim):
+    def __init__(self, num_heads, embed_dim, lora_tuning):
         super().__init__()
 
         self.num_heads = num_heads
         self.embed_dim = embed_dim
         self.head_dim = embed_dim // num_heads
         self.local_num_heads = self.num_heads // fs_init.get_model_parallel_world_size()
+        self.lora_tuning = lora_tuning
 
         self.q_proj = ColumnParallelLinear(
             self.embed_dim,
@@ -523,18 +547,18 @@ class LLaMAAttention(nn.Module):
             input_is_parallel=True,
             init_method=lambda x: x,
         )
+        if self.lora_tuning:
+            self.lora_alpha = 32
+            self.r = 4
+            self.scaling = self.lora_alpha / self.r
 
-        self.lora_alpha = 32
-        self.r = 4
-        self.scaling = self.lora_alpha / self.r
-
-        self.q_lora_A = nn.Parameter(self.q_proj.weight.new_zeros((self.r, self.embed_dim)))
-        self.q_lora_B = nn.Parameter(self.q_proj.weight.new_zeros((self.embed_dim, self.r)))
-        self.k_lora_A = nn.Parameter(self.k_proj.weight.new_zeros((self.r, self.embed_dim)))
-        self.k_lora_B = nn.Parameter(self.k_proj.weight.new_zeros((self.embed_dim, self.r)))
-        self.v_lora_A = nn.Parameter(self.v_proj.weight.new_zeros((self.r, self.embed_dim)))
-        self.v_lora_B = nn.Parameter(self.v_proj.weight.new_zeros((self.embed_dim, self.r)))
-        self.reset_lora_parameters()
+            self.q_lora_A = nn.Parameter(self.q_proj.weight.new_zeros((self.r, self.embed_dim)))
+            self.q_lora_B = nn.Parameter(self.q_proj.weight.new_zeros((self.embed_dim, self.r)))
+            self.k_lora_A = nn.Parameter(self.k_proj.weight.new_zeros((self.r, self.embed_dim)))
+            self.k_lora_B = nn.Parameter(self.k_proj.weight.new_zeros((self.embed_dim, self.r)))
+            self.v_lora_A = nn.Parameter(self.v_proj.weight.new_zeros((self.r, self.embed_dim)))
+            self.v_lora_B = nn.Parameter(self.v_proj.weight.new_zeros((self.embed_dim, self.r)))
+            self.reset_lora_parameters()
 
     def reset_lora_parameters(self):
         nn.init.kaiming_uniform_(self.q_lora_A, a=math.sqrt(5))
@@ -600,11 +624,12 @@ class LLaMAAttention(nn.Module):
         bsz, src_len, embed_dim = key_value.size()
         
         q = self.q_proj(query)
-        q += (query @ self.q_lora_A.T @ self.q_lora_B.T) * self.scaling
         k = self.k_proj(key_value)
-        k += (key_value @ self.k_lora_A.T @ self.k_lora_B.T) * self.scaling
         v = self.v_proj(key_value)
-        v += (key_value @ self.v_lora_A.T @ self.v_lora_B.T) * self.scaling
+        if self.lora_tuning:
+            q += (query @ self.q_lora_A.T @ self.q_lora_B.T) * self.scaling
+            k += (key_value @ self.k_lora_A.T @ self.k_lora_B.T) * self.scaling
+            v += (key_value @ self.v_lora_A.T @ self.v_lora_B.T) * self.scaling
 
         q = q.view(bsz, tgt_len, self.local_num_heads, self.head_dim)
         k = k.view(bsz, src_len, self.local_num_heads, self.head_dim)
@@ -633,26 +658,26 @@ class LLaMAAttention(nn.Module):
         return self.out_proj(output), attn_softmax_scores
 
     def upgrade_state_dict_named(self, state_dict, name):
-        
-        prefix = name + '.q_lora_A'
-        if prefix not in state_dict:
-            state_dict[prefix] = self.q_lora_A
-        prefix = name + '.k_lora_A'
-        if prefix not in state_dict:
-            state_dict[prefix] = self.k_lora_A
-        prefix = name + '.v_lora_A'
-        if prefix not in state_dict:
-            state_dict[prefix] = self.v_lora_A
+        if self.lora_tuning:
+            prefix = name + '.q_lora_A'
+            if prefix not in state_dict:
+                state_dict[prefix] = self.q_lora_A
+            prefix = name + '.k_lora_A'
+            if prefix not in state_dict:
+                state_dict[prefix] = self.k_lora_A
+            prefix = name + '.v_lora_A'
+            if prefix not in state_dict:
+                state_dict[prefix] = self.v_lora_A
 
-        prefix = name + '.q_lora_B'
-        if prefix not in state_dict:
-            state_dict[prefix] = self.q_lora_B
-        prefix = name + '.k_lora_B'
-        if prefix not in state_dict:
-            state_dict[prefix] = self.k_lora_B
-        prefix = name + '.v_lora_B'
-        if prefix not in state_dict:
-            state_dict[prefix] = self.v_lora_B
+            prefix = name + '.q_lora_B'
+            if prefix not in state_dict:
+                state_dict[prefix] = self.q_lora_B
+            prefix = name + '.k_lora_B'
+            if prefix not in state_dict:
+                state_dict[prefix] = self.k_lora_B
+            prefix = name + '.v_lora_B'
+            if prefix not in state_dict:
+                state_dict[prefix] = self.v_lora_B
 
 class LLaMAFeedForward(nn.Module):
 

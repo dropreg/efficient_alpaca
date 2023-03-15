@@ -6,18 +6,20 @@ export CUDA_VISIBLE_DEVICES=0
 
 data_dir=/opt/data/private/data/llama/llama_raw/data-bin
 save_dir=/opt/data/private/ckpt/alpaca/lora/
-xlmr_path=/opt/data/private/data/llama/7B/model.pt
+llama_dir=/opt/data/private/data/llama/7B/model.pt
 max_token=1024
 update_freq=2
 world_size=1
 
-torchrun --master_port 29001 --nproc_per_node $world_size alpaca_lora/src/train.py $data_dir \
+
+torchrun --master_port 29000 --nproc_per_node $world_size alpaca_lora/src/train.py $data_dir \
     --reset-optimizer --reset-dataloader --reset-meters \
-    --restore-file $xlmr_path \
+    --restore-file $llama_dir \
     --user-dir alpaca_lora/src \
     --max-target-positions 1024 \
     --task llama_task \
     --arch llama_7b \
+    --lora-tuning \
     --criterion llama_loss \
     -s $src -t $tgt \
     --max-tokens $max_token \

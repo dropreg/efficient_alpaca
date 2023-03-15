@@ -2,6 +2,7 @@ import torch
 import itertools
 import os
 import logging
+from typing import Dict, Optional
 
 from dataclasses import dataclass, field
 from fairseq import utils
@@ -159,13 +160,24 @@ def load_langpair_dataset(
         pad_to_multiple=pad_to_multiple,
     )
 
+@dataclass
+class LLaMATaskConfig(TranslationConfig):
+    llama_model_inf: Optional[str] = field(
+        default="", metadata={"help": "load llama model for inference"},
+    )
 
-@register_task("llama_task", dataclass=TranslationConfig)
+@register_task("llama_task", dataclass=LLaMATaskConfig)
 class LLaMATask(TranslationTask):
 
     def __init__(self, cfg, src_dict, tgt_dict):
         super().__init__(cfg, src_dict, tgt_dict)
+        self.llama_model_inf = cfg.llama_model_inf
         
+    def build_model(self, cfg, from_checkpoint=False):
+        model = super().build_model(cfg, from_checkpoint)
+        model.set_llama_model_inf(self.llama_model_inf)
+        return model
+
     def build_bpe(self, args):
         from sentencepiece import SentencePieceProcessor
         model_path = args.sentencepiece_model
