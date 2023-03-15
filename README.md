@@ -6,12 +6,12 @@
 
 This repository aim to reproduce the Stanford Alpaca using low-rank adaptation (LoRA) based on fairseq toolkit. 
 
-Cons:
++ This project only save LoRA parameters (only 37M) for Alpaca model.
++ LoRA efficient tuning only cost 30 minutes for 1 epoch.
 
-1. This project only save LoRA parameters (only 37M) for Aplaca model.
-2. LoRA efficient tuning only cost 30 minutes for 1 epoch.
-3. We have relase our model!
 
+**************************** Updates ****************************
++ 3/15 We released our model checkpoints !
 
 ## Model List
 Our released models are listed as following. 
@@ -19,7 +19,7 @@ You can download it from [huggingface website](https://huggingface.co/dropreg/ef
 
 | Model                 | Link     |
 |:----------------------|:--------:|
-| Aplaca_LoRA (epoch=3) | [link](https://huggingface.co/dropreg/efficient_alpaca/resolve/main/checkpoint3.pt) |
+| Alpaca_LoRA (epoch=3) | [link](https://huggingface.co/dropreg/efficient_alpaca/resolve/main/checkpoint3.pt) |
 
 
 ## Setup
@@ -71,18 +71,25 @@ bash alpaca_lora/scripts/run_train_alpaca.sh
 ```
 
 ## Infernce Step:
-Please prepare the test file like [test.src]().
+We support two manner for inference:
 
-| We have to load llama-7b model for inference scripts using command ```--llama-model-inf $llama_dir```.
+1. (Instance-Level) Using alpaca_lora/src/inference.py line 17 to set prompts.
+    ```
+    bash alpaca_lora/scripts/run_inf_hub.sh
+    ```
 
-```
-# prepare data
-bash alpaca_lora/scripts/prepare_inf_data.sh
-# run inference
-# reset the ckpt path 
-# save_dir=alpaca_lora_model_dir
-bash alpaca_lora/scripts/run_inf_alpaca.sh
-```
+2. (Batch-Level) Please prepare the test file like [test.src](alpaca_lora/scripts/test.src).
+
+    **Note**: We have to load llama-7b model for inference scripts using command ```--llama-model-inf $llama_dir```.
+
+    ```
+    # prepare data
+    bash alpaca_lora/scripts/prepare_inf_data.sh
+    # run inference
+    # reset the ckpt path 
+    # save_dir=alpaca_lora_model_dir
+    bash alpaca_lora/scripts/run_inf_alpaca.sh
+    ```
 
 ## Some Case Sampled by Our Alpaca-LoRA:
 

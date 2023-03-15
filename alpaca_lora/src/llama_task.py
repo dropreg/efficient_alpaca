@@ -183,9 +183,13 @@ class LLaMATask(TranslationTask):
         model_path = args.sentencepiece_model
         self.sp_model = SentencePieceProcessor(model_file=model_path)
         return self.sp_model
-        
+    
     @classmethod
     def load_dictionary(cls, filename):
+        if "dict.src.txt" not in filename or "dict.tgt.txt" not in filename:
+            filename = "alpaca_lora/scripts/dict.txt"
+            logger.info("{} is not exist, load common dict!".format(filename))
+        
         dictionary = Dictionary.load(filename)
         dictionary.pad_index = dictionary.add_symbol(dictionary.pad_word)
         return dictionary
@@ -231,7 +235,16 @@ class LLaMATask(TranslationTask):
         with torch.no_grad():
             loss, sample_size, logging_output = criterion(model, sample)
         return loss, sample_size, logging_output
-        
+
+    def build_dataset_for_inference(self, src_tokens, src_lengths, constraints=None):
+        return LanguagePairDataset(
+            src_tokens,
+            src_lengths,
+            self.source_dictionary,
+            tgt_dict=self.target_dictionary,
+            constraints=constraints,
+        )
+
     def build_generator(
         self,
         models,

@@ -31,6 +31,7 @@ from fairscale.nn.model_parallel.layers import (
     RowParallelLinear,
     ColumnParallelLinear,
 )
+from hub_interface import LLaMAHubInterface
 
 logger = logging.getLogger(__name__)
 
@@ -98,16 +99,32 @@ class LLaMA(BaseFairseqModel):
     @classmethod
     def initialize_model_parallel(cls):
         logger.info("llama model init process group")
+        
         if not torch.distributed.is_available():
-            torch.distributed.init_process_group("nccl")        
+            torch.distributed.init_process_group("nccl")
         try:
             mpu.initialize_model_parallel(torch.distributed.get_world_size())
         except:
             logger.info("Default process group has not been initialized")
             torch.distributed.init_process_group("nccl")
             mpu.initialize_model_parallel(torch.distributed.get_world_size())
-            pass
-            
+
+    @classmethod
+    def from_pretrained(
+        cls,
+        model_name_or_path,
+        checkpoint_file,
+        **kwargs
+    ):
+        from fairseq import hub_utils
+
+        x = hub_utils.from_pretrained(
+            model_name_or_path,
+            checkpoint_file,
+            **kwargs,
+        )
+        return LLaMAHubInterface(x["args"], x["task"], x["models"][0])
+    
     @classmethod
     def build_embedding(cls, args, dictionary, embed_dim, path=None):
         
@@ -129,7 +146,7 @@ class LLaMA(BaseFairseqModel):
             "encoder_states": src_hiddens,
             "src_tokens": [encoder_inputs['src_tokens']],
             "src_pos": [encoder_inputs['src_pos']],
-            "tgt_pos": [encoder_inputs['tgt_pos']],
+            "tgt_pos": [encoder_inputs['tgt_pos']] if encoder_inputs['tgt_pos'] is not None else [],
             "bos_token_pos": [encoder_inputs['bos_token_pos']],
         }
 

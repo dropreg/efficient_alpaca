@@ -109,6 +109,11 @@ def collate(
     )
     bos_token_pos = bos_token_pos.index_select(0, sort_order)
     
+    prev_output_tokens = None
+    target = None
+    tgt_pos_mask = None
+    tgt_pos = None
+    
     if samples[0].get("target", None) is not None:
         target = merge(
             "target",
@@ -140,13 +145,14 @@ def collate(
         )
         tgt_pos = tgt_pos.index_select(0, sort_order)
         tgt_pos[:,0:1] =  bos_token_pos
+
+        tgt_pos_mask = (tgt_pos == pad_idx)
+        tgt_pos = tgt_pos.masked_fill(tgt_pos_mask, 0)
     else:
         ntokens = src_lengths.sum().item()
-    
+
     src_pos_mask = (src_pos == pad_idx)
     src_pos = src_pos.masked_fill(src_pos_mask, 0)
-    tgt_pos_mask = (tgt_pos == pad_idx)
-    tgt_pos = tgt_pos.masked_fill(tgt_pos_mask, 0)
 
     batch = {
         "id": id,
@@ -159,10 +165,11 @@ def collate(
             "src_pos": src_pos,
             "tgt_pos": tgt_pos,
             "bos_token_pos": bos_token_pos,
-            "prev_output_tokens": prev_output_tokens,
         },
         "target": target,
     }
+    if prev_output_tokens is not None:
+        batch["net_input"]["prev_output_tokens"] = prev_output_tokens
 
     if samples[0].get("alignment", None) is not None:
         bsz, tgt_sz = batch["target"].shape
@@ -330,14 +337,16 @@ class LanguagePairDataset(FairseqDataset):
                 src_item = self.src[index][:-1]
 
         bos_token = src_item[-1:]
-        tgt_item = tgt_item[1:]
-
-        tgt_pos = new_arange(tgt_item) + src_item.size(0)
         bos_token_pos = new_arange(bos_token) + src_item.size(0) - 1
-
         src_item = src_item[:-1]
         src_pos = new_arange(src_item)
-        
+
+        if tgt_item is not None:
+            tgt_item = tgt_item[1:]
+            tgt_pos = new_arange(tgt_item) + src_item.size(0)
+        else:
+            tgt_pos = None
+            
         example = {
             "id": index,
             "source": src_item,
