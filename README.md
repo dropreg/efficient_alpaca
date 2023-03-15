@@ -3,18 +3,31 @@
 
 This repository aim to reproduce the Stanford Alpaca using low-rank adaptation (LoRA) based on fairseq toolkit. 
 
-Con:
+Cons:
 
 1. This project only save LoRA parameters (only 37M) for Aplaca model.
 2. LoRA efficient tuning only cost 30 minutes for 1 epoch.
+3. We have relase our model!
+
+
+## Model List
+Our released models are listed as following. 
+You can download it from [huggingface website](https://huggingface.co/dropreg/efficient_alpaca/). 
+
+| Model                 | Link     |
+|:----------------------|:--------:|
+| Aplaca_LoRA (epoch=3) | [link](https://huggingface.co/dropreg/efficient_alpaca/resolve/main/checkpoint3.pt) |
+
 
 ## Setup
+Ensure the pytorch and cuda environment available, and install fllowing dependences:
+
 ```
 pip install fairseq
 pip install fairscale
 ```
 
-[Optinal] We can install sentencepiece from [official repo](https://github.com/google/sentencepiece) to process data or hack for your specific task.
+We have to install sentencepiece from [official repo](https://github.com/google/sentencepiece) to process data or hack for your specific task.
 
 ```
 git clone https://github.com/google/sentencepiece.git 
@@ -32,15 +45,15 @@ make install
 
 2. Prepare the checkpoint to fairseq toolkit:
     ```
-    python alpaca_lora/scripts/process_llama_ckpt.py --model-dir [your llama dir] --model-file [your llama file]
+    python alpaca_lora/scripts/process_llama_ckpt.py --model-dir $llama_dir --model-file $llama_file
     ```
-    after that, we can get new checkpoint file ``model.pt`` in [your llama dir].
+    after that, we can get new checkpoint file ``model.pt`` in ``$llama_dir``.
 
 3. Download Alpaca training file [alpaca_data.json](https://github.com/tatsu-lab/stanford_alpaca/blob/main/alpaca_data.json), which contains 52K instruction-following data for fine-tuning the Alpaca model.
 
 4. Prepare the training data for fairseq toolkit:
 
-    Set *DATA* path in following scripts for processed data:
+    Reset *DATA* (processed data) in following scripts:
     ```
     bash alpaca_lora/scripts/prepare_llama_training_data.sh
     ```
@@ -57,7 +70,7 @@ bash alpaca_lora/scripts/run_train_alpaca.sh
 ## Infernce Step:
 Please prepare the test file like [test.src]().
 
-We have to load llama-7b model for inference scripts using command ```--llama-model-inf $llama_dir```.
+| We have to load llama-7b model for inference scripts using command ```--llama-model-inf $llama_dir```.
 
 ```
 # prepare data

@@ -19,7 +19,7 @@ torchrun --master_port 29001 --nproc_per_node $world_size alpaca_lora/src/genera
     -s $src -t $tgt \
     --gen-subset test \
     --bpe 'sentencepiece' --sentencepiece-model $bpe_dir \
-    --path $save_dir/checkpoint1.pt \
+    --path $save_dir/checkpoint3.pt \
     --seed 1 \
     --required-batch-size-multiple 1 \
     --batch-size 1 \
