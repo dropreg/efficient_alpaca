@@ -91,7 +91,7 @@ class LLaMA(BaseFairseqModel):
     @classmethod
     def initialize_model_parallel(cls):
         # logger.info("llama model init process group")
-        # torch.distributed.init_process_group("nccl")
+        torch.distributed.init_process_group("nccl")
         mpu.initialize_model_parallel(torch.distributed.get_world_size())
 
     @classmethod

@@ -54,9 +54,7 @@ We support the batch-level inference:
 bash alpaca_lora/scripts/run_inf_alpaca.sh
 ```
 
-## some case:
-
-Just sampled by epoch=1 checkpoint (30min):
+## Some Case Sampled by Our Alpaca-LoRA:
 
 1. **Question**: what is the capital of china?
 
@@ -86,21 +84,36 @@ Just sampled by epoch=1 checkpoint (30min):
 
 3. **Question**: 请讲一个武侠故事.
 
-    **Answer**: Once upon a time, there was a brave knight who set out on a quest to save the kingdom from an evil sorcerer. The knight was accompanied by a brave squire and a noble steed. As they journeyed, they faced many challenges and fought fierce battles, eventually defeating the sorcerer and bringing peace to the kingdom.
+    **Answer**: 
+    ```
+    The legendary warrior Guan Yu Once upon a time, there was a legendary warrior named Guan Yu. He was a highly skilled fighter and commander and was known for his great bravery and loyalty. He was the loyal servant of Emperor Liu Bei, and fought in the Three Kingdoms civil war alongside him. He was brave enough to challenge the powerful enemy warriors, and eventually helped Liu Bei's army defeat the Wei Kingdom, the strongest of the three kingdoms. Guan Yu was a great warrior and a hero in Chinese history.
+    ```
 
 4. **Question**: what is an alpaca? how is it different form a llama?
 
-    **Answer**: Alpaca is a species of domesticated South American animal that is related to the llama, but is smaller in size and has a much softer fleece. Alpacas are gentle, intelligent and docile. They are used for wool production, and are typically a light grey in color. Llamas are similar in appearance, but are much larger and can be found in a variety of colors. They are generally more aggressive and are used for beinn validated and used as pack animals.
+    **Answer**: 
+    ```
+    Alpacas and llamas are both members of the Camelidae family. They are both herbivorous mammals that are domesticated for their coats, but they are distinctly different species. Llamas are generally larger than alpacas and have more pronounced spiral horns, while alpacas have smaller horns and more delicate coats. Alpacas also have smaller teeth and a narrower neck than llamas, and they are able to reproduced year-round. Llamas are also unable to reproduce during the winter months and have a more social behavior than alpacas.
+    ```
 
 5. **Question**: write a e-mail to congratulate Lee and mention that you are exited about meeting all of them in person.
 
-    **Answer**: Dear Lee,
+    **Answer**:
+    ```
+    Dear Lee,
 
-    I am excited to meet all of you in person! It is such an honor to be part of such an amazing team. Congratulations on your success so far and I look forward to working with you all in the coming months.
+    I want to congratulate you on your success and I'm looking forward to meeting you and the other team members in person. It's exciting to see the progress you've made and I'm sure the hard work you have put in has paid off. I'm very proud of you and I'm looking forward to meeting you in person and seeing all of your progress.
+
+    Sincerely,
+    [Your Name]
+    ```
 
 5. **Question**: write a well-thought our abstract for a machine learning parper that proves that 42 is the optimal seed for training neural network.
 
-    **Answer**: The optimal seed for training a neural network is yet to be determined. However, this paper aims to investigate the hypothesis that 42 is the optimal seed for training neural networks. The hypothesis is tested using a variety of datasets and model architectures. It is found that a seed of 42 gives the best results for training neural networks. In the process, the paper also explores the relationship between the optimality of the seed and the network architecture, and the relationship between the seed and the training loss. The paper also provides a comprehensive analysis of the effect of the seed on the performance of the network.
+    **Answer**: 
+    ```
+    This paper investigates the effect of different seeds on the performance of neural networks. Through experiments, we demonstrate that the optimal seed is 42, which leads to the best performance on a wide range of tasks. We analyze the effects of different seeds on the model's accuracy, robustness, and other metrics. Our results show that 42 is the best seed for neural networks, and we discuss the implications of this finding.
+    ```
 
 
 ## Reference
