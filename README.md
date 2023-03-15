@@ -35,7 +35,7 @@ make install
 3. Download Alpaca training file [alpaca_data.json](https://github.com/tatsu-lab/stanford_alpaca/blob/main/alpaca_data.json), which contains 52K instruction-following data for fine-tuning the Alpaca model.
 
 4. Prepare the training data for fairseq toolkit:
-    
+
     Set *DATA* path in following scripts for processed data:
     ```
     bash alpaca_lora/scripts/prepare_llama_training_data.sh
@@ -101,3 +101,29 @@ Just sampled by epoch=1 checkpoint (30min):
 5. **Question**: write a well-thought our abstract for a machine learning parper that proves that 42 is the optimal seed for training neural network.
 
     **Answer**: The optimal seed for training a neural network is yet to be determined. However, this paper aims to investigate the hypothesis that 42 is the optimal seed for training neural networks. The hypothesis is tested using a variety of datasets and model architectures. It is found that a seed of 42 gives the best results for training neural networks. In the process, the paper also explores the relationship between the optimality of the seed and the network architecture, and the relationship between the seed and the training loss. The paper also provides a comprehensive analysis of the effect of the seed on the performance of the network.
+
+
+## Reference
+
+LLaMA: Open and Efficient Foundation Language Models \[[paper](https://arxiv.org/abs/2302.13971)\]\[[github](https://github.com/facebookresearch/llama)\]
+
+```
+@article{touvron2023llama,
+  title={LLaMA: Open and Efficient Foundation Language Models},
+  author={Touvron, Hugo and Lavril, Thibaut and Izacard, Gautier and Martinet, Xavier and Lachaux, Marie-Anne and Lacroix, Timoth{\'e}e and Rozi{\`e}re, Baptiste and Goyal, Naman and Hambro, Eric and Azhar, Faisal and Rodriguez, Aurelien and Joulin, Armand and Grave, Edouard and Lample, Guillaume},
+  journal={arXiv preprint arXiv:2302.13971},
+  year={2023}
+}
+```
+
+Stanford Alpaca: An Instruction-following LLaMA model \[[github](https://github.com/tatsu-lab/stanford_alpaca)\]
+
+```
+@misc{alpaca,
+  author = {Rohan Taori and Ishaan Gulrajani and Tianyi Zhang and Yann Dubois and Xuechen Li and Carlos Guestrin and Percy Liang and Tatsunori B. Hashimoto },
+  title = {Stanford Alpaca: An Instruction-following LLaMA model},
+  year = {2023},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/tatsu-lab/stanford_alpaca}},
+}
