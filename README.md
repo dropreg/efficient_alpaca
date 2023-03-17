@@ -12,7 +12,7 @@ The aim of this repository is to utilize LLaMA to reproduce and enhance the Stan
 
 **************************** Updates ****************************
 
-- 3/16 We support model parallel to reduce GPU memory using Megatron-LM !
+- 3/17 We support model parallel to reduce GPU memory using Megatron-LM !
 - 3/15 We released our model checkpoints !
 
 ## Web Interface:
@@ -32,8 +32,8 @@ You can download it from [huggingface website](https://huggingface.co/dropreg/ef
 
 | Model                 | Device      | Link     |
 |:----------------------|:-----------:|:--------:|
-| Alpaca_LoRA (epoch=3) | 1 $40G A100 | [link](https://huggingface.co/dropreg/efficient_alpaca/resolve/main/alpaca_lora.pt) |
-| Alpaca_MagetronLM_LoRA (epoch=3) | 2 $23G A100 | [link](https://huggingface.co/dropreg/efficient_alpaca/resolve/main/alpaca_megatron_lora.pt) |
+| Alpaca_LoRA (epoch=3) | 1 40G A100 | [link](https://huggingface.co/dropreg/efficient_alpaca/resolve/main/alpaca_lora.pt) |
+| Alpaca_MagetronLM_LoRA (epoch=3) | 2 23G A100 | [link](https://huggingface.co/dropreg/efficient_alpaca/resolve/main/alpaca_megatron_lora.pt) |
 
 ## Setup
 Ensure the pytorch and cuda environment available, and install fllowing dependences:
