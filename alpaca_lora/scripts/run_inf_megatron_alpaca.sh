@@ -2,19 +2,20 @@
 src=src
 tgt=tgt
 
-export CUDA_VISIBLE_DEVICES=4
+export CUDA_VISIBLE_DEVICES=0,1
 
 data_dir=/opt/data/private/data/llama/llama_raw/inf/data-bin/
 llama_dir=/opt/data/private/data/llama/7B/
-lora_dir=/opt/data/private/ckpt/alpaca/lora/checkpoint3.pt
-# lora_dir=/opt/data/private/ckpt/alpaca/parallel_lora/checkpoint3-model_part-0.pt
+lora_dir=/opt/data/private/ckpt/alpaca/parallel_lora/checkpoint3-model_part-0.pt
 bpe_dir=/opt/data/private/data/llama/tokenizer.model
-world_size=1
+world_size=2
 
 
-torchrun --master_port 29005 --nproc_per_node $world_size alpaca_lora/src/generate.py $data_dir \
+torchrun --master_port 29006 --nproc_per_node $world_size alpaca_lora/src/generate.py $data_dir \
     --user-dir alpaca_lora/src \
     --task llama_task \
+    --model-parallel-size $world_size \
+    --distributed-world-size $world_size \
     --lora-model-inf $lora_dir \
     --arch llama_7b \
     --lora-tuning \

@@ -7,7 +7,7 @@ MODEL=/opt/data/private/data/llama/tokenizer.model
 
 ${SPM} --model=${MODEL} < ${DATA}/test.${SRC} > ${DATA}/test.spm.${SRC}
 
-cp ${DATA}/test.spm.${SRC} ${DATA}/test.spm.${TGT}
+# cp ${DATA}/test.spm.${SRC} ${DATA}/test.spm.${TGT}
 
 python alpaca_lora/src/preprocess.py \
   --user-dir alpaca_lora/src \

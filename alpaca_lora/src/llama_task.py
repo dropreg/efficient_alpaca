@@ -162,8 +162,13 @@ def load_langpair_dataset(
 
 @dataclass
 class LLaMATaskConfig(TranslationConfig):
-    llama_model_inf: Optional[str] = field(
-        default="", metadata={"help": "load llama model for inference"},
+    
+    lora_model_inf: Optional[str] = field(
+        default="", metadata={"help": "load lora model for inference"},
+    )
+
+    lora_tuning: bool = field(
+        default=False, metadata={"help": "if using lora tuning"},
     )
 
 @register_task("llama_task", dataclass=LLaMATaskConfig)
@@ -171,11 +176,12 @@ class LLaMATask(TranslationTask):
 
     def __init__(self, cfg, src_dict, tgt_dict):
         super().__init__(cfg, src_dict, tgt_dict)
-        self.llama_model_inf = cfg.llama_model_inf
+        self.lora_model_inf = cfg.lora_model_inf
+        self.lora_tuning = cfg.lora_tuning
         
     def build_model(self, cfg, from_checkpoint=False):
         model = super().build_model(cfg, from_checkpoint)
-        model.set_llama_model_inf(self.llama_model_inf)
+        model.set_lora_model_inf(self.lora_model_inf)
         return model
 
     def build_bpe(self, args):
@@ -187,8 +193,9 @@ class LLaMATask(TranslationTask):
     @classmethod
     def load_dictionary(cls, filename):
         if "dict.src.txt" not in filename or "dict.tgt.txt" not in filename:
-            filename = "alpaca_lora/scripts/dict.txt"
-            logger.info("{} is not exist, load common dict!".format(filename))
+            logger.info("{} is not exist!".format(filename))
+            filename = "alpaca_lora/scripts/assert/dict.txt"
+            logger.info("load common dict {}!".format(filename))
         
         dictionary = Dictionary.load(filename)
         dictionary.pad_index = dictionary.add_symbol(dictionary.pad_word)
@@ -295,3 +302,43 @@ class LLaMATask(TranslationTask):
                 prefix_tokens=prefix_tokens, constraints=constraints, 
                 bos_token=bos_token,
             )
+
+    def get_batch_iterator(
+        self,
+        dataset,
+        max_tokens=None,
+        max_sentences=None,
+        max_positions=None,
+        ignore_invalid_inputs=False,
+        required_batch_size_multiple=1,
+        seed=1,
+        num_shards=1,
+        shard_id=0,
+        num_workers=0,
+        epoch=1,
+        data_buffer_size=0,
+        disable_iterator_cache=False,
+        skip_remainder_batch=False,
+        grouped_shuffling=False,
+        update_epoch_batch_itr=False,
+    ):
+        num_shards = 1
+        shard_id=0
+        return super().get_batch_iterator(
+            dataset,
+            max_tokens,
+            max_sentences,
+            max_positions,
+            ignore_invalid_inputs,
+            required_batch_size_multiple,
+            seed,
+            num_shards,
+            shard_id,
+            num_workers,
+            epoch,
+            data_buffer_size,
+            disable_iterator_cache,
+            skip_remainder_batch,
+            grouped_shuffling,
+            update_epoch_batch_itr,
+        )

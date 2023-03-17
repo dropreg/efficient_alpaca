@@ -25,7 +25,7 @@ if __name__ == "__main__":
         help="where in model_dir are weights saved",
     )
     parser.add_argument(
-        "--llama-model-inf",
+        "--lora-model-inf",
         default="checkpoint_best.pt",
         help="where in model_dir are weights saved",
     )
@@ -35,9 +35,12 @@ if __name__ == "__main__":
     
     kwargs = {
         "user_dir": "alpaca_lora/src", 
-        "llama_model_inf": args.llama_model_inf,
+        "lora_model_inf": args.lora_model_inf,
         "bpe": args.bpe,
         "sentencepiece_model": args.sentencepiece_model,
+        "source_lang": 'src',
+        "target_lang": 'tgt',
+        "lora_tuning": True,
     }
     alpaca = LLaMA.from_pretrained(
         model_name_or_path=args.model_dir,

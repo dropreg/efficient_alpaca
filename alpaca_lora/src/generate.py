@@ -23,6 +23,7 @@ from fairseq import checkpoint_utils, options, scoring, tasks, utils
 from fairseq.dataclass.utils import convert_namespace_to_omegaconf
 from fairseq.logging import progress_bar
 from fairseq.logging.meters import StopwatchMeter, TimeMeter
+import utils as distributed_utils
 
 
 def main(cfg: DictConfig):
@@ -91,6 +92,7 @@ def _main(cfg: DictConfig, output_file):
 
     overrides = ast.literal_eval(cfg.common_eval.model_overrides)
 
+    logger.info("cfg.checkpoint.checkpoint_suffix {}".format(cfg.checkpoint.checkpoint_suffix))
     # Load ensemble
     logger.info("loading model(s) from {}".format(cfg.common_eval.path))
     models, saved_cfg = checkpoint_utils.load_model_ensemble(
@@ -252,6 +254,10 @@ def _main(cfg: DictConfig, output_file):
             if has_target:
                 target_str = decode_fn(target_tokens)
 
+            if "-model_part" in cfg.checkpoint.checkpoint_suffix and "-model_part-0" not in cfg.checkpoint.checkpoint_suffix:
+                print(distributed_utils.get_model_parallel_rank())
+                continue
+
             if not cfg.common_eval.quiet:
                 if src_dict is not None:
                     print("S-{}\t{}".format(sample_id, src_str), file=output_file)
@@ -282,21 +288,21 @@ def _main(cfg: DictConfig, output_file):
                         "D-{}\t{}\t{}".format(sample_id, score, detok_hypo_str),
                         file=output_file,
                     )
-                    print(
-                        "P-{}\t{}".format(
-                            sample_id,
-                            " ".join(
-                                map(
-                                    lambda x: "{:.4f}".format(x),
-                                    # convert from base e to base 2
-                                    hypo["positional_scores"]
-                                    .div_(math.log(2))
-                                    .tolist(),
-                                )
-                            ),
-                        ),
-                        file=output_file,
-                    )
+                    # print(
+                    #     "P-{}\t{}".format(
+                    #         sample_id,
+                    #         " ".join(
+                    #             map(
+                    #                 lambda x: "{:.4f}".format(x),
+                    #                 # convert from base e to base 2
+                    #                 hypo["positional_scores"]
+                    #                 .div_(math.log(2))
+                    #                 .tolist(),
+                    #             )
+                    #         ),
+                    #     ),
+                    #     file=output_file,
+                    # )
 
                     if cfg.generation.print_alignment == "hard":
                         print(
@@ -410,7 +416,12 @@ def cli_main():
         "model args (e.g. `AudioPretraining`)",
     )
     args = options.parse_args_and_arch(parser)
-    main(args)
+
+    if args.model_parallel_size > 1:
+        print("run megatron mode...")
+        distributed_utils.call_main(convert_namespace_to_omegaconf(args), main)
+    else:
+        main(args)
 
 
 if __name__ == "__main__":

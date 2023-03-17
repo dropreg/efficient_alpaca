@@ -4,13 +4,16 @@
 
 # Efficient Alpaca
 
-This repository aim to reproduce the Stanford Alpaca using low-rank adaptation (LoRA) based on fairseq toolkit. 
+The aim of this repository is to utilize LLaMA to reproduce and enhance the Stanford Alpaca, including but not limited to **reducing resource consumption**, **improving inference speed**, and more **facilitating researchers' use** (especially for fairseq users). This project will be constantly updated and maintained. Please feel free to use it!
 
-+ This project only save LoRA parameters (only 37M) for Alpaca model.
-+ LoRA efficient tuning only cost 30 minutes for 1 epoch.
++ Efficient Alpaca is capable of reproducing the Stanford Alpaca model using only the LoRA parameters, which occupy a significantly smaller space of 37M.
++ Efficient Alpaca employs a more efficient tuning approach known as LoRA, which yields faster training times, taking only 30 minutes per epoch.
++ Efficient Alpaca supports various GPU devices, including: ``1 40G A100 GPU`` or ``2 24G 3090 GPUs``.
 
 **************************** Updates ****************************
-+ 3/15 We released our model checkpoints !
+
+- 3/16 We support model parallel to reduce GPU memory using Megatron-LM !
+- 3/15 We released our model checkpoints !
 
 ## Web Interface:
 We support [Gradio](https://gradio.app/) website interface:
@@ -25,12 +28,12 @@ bash  alpaca_lora/scripts/run_webapp.sh
 
 ## Model List
 Our released models are listed as following. 
-You can download it from [huggingface website](https://huggingface.co/dropreg/efficient_alpaca/). 
+You can download it from [huggingface website](https://huggingface.co/dropreg/efficient_alpaca/).
 
-| Model                 | Link     |
-|:----------------------|:--------:|
-| Alpaca_LoRA (epoch=3) | [link](https://huggingface.co/dropreg/efficient_alpaca/resolve/main/checkpoint3.pt) |
-
+| Model                 | Device      | Link     |
+|:----------------------|:-----------:|:--------:|
+| Alpaca_LoRA (epoch=3) | 1 $40G A100 | [link](https://huggingface.co/dropreg/efficient_alpaca/resolve/main/alpaca_lora.pt) |
+| Alpaca_MagetronLM_LoRA (epoch=3) | 2 $23G A100 | [link](https://huggingface.co/dropreg/efficient_alpaca/resolve/main/alpaca_megatron_lora.pt) |
 
 ## Setup
 Ensure the pytorch and cuda environment available, and install fllowing dependences:
@@ -54,31 +57,49 @@ make install
 
 ## Prepare Model and Data:
 
-1. Download the llama checkpoint from official repo [llama](https://github.com/facebookresearch/llama), or [unofficial repo](https://github.com/shawwn/llama-dl)
+1. Download the LLaMA checkpoint from official repo [LLaMA](https://github.com/facebookresearch/llama), or [unofficial repo](https://github.com/shawwn/llama-dl)
 
 2. Prepare the checkpoint to fairseq toolkit:
-    ```
-    python alpaca_lora/scripts/process_llama_ckpt.py --model-dir $llama_dir --model-file $llama_file
-    ```
-    after that, we can get new checkpoint file ``model.pt`` in ``$llama_dir``.
 
+    You process the LLaMA model based on your equipment (GPU devices). For instance, if you only have two 24G 3090 GPUs, you can choose to split the LLaMA model into two parts and select the appropriate training script.
+    1. run on **single 40G A100**:
+        ```
+        python alpaca_lora/scripts/utils/process_llama_ckpt.py --llama-model-dir $llama_dir --llama-model-file $llama_file
+        ```
+    2. run on **two 24G 3090**:
+        ```
+        python alpaca_lora/scripts/utils/process_llama_megatron_ckpt.py --llama-model-dir $llama_dir --llama-model-file $llama_file --parallel-size 2
+        ```
+    after that, we can get new checkpoint file ``model.pt``.
 3. Download Alpaca training file [alpaca_data.json](https://github.com/tatsu-lab/stanford_alpaca/blob/main/alpaca_data.json), which contains 52K instruction-following data for fine-tuning the Alpaca model.
 
 4. Prepare the training data for fairseq toolkit:
-
-    Reset *DATA* (processed data) in following scripts:
+    > several key parameters:
+    > + **DATA** represents the path to the downloaded data
+    > + **SPM** is the encoding file for SentencePiece
+    > + **MODEL** is the tokenization model for LLaMA
     ```
-    bash alpaca_lora/scripts/prepare_llama_training_data.sh
+    bash alpaca_lora/scripts/utils/prepare_llama_training_data.sh
     ```
 
 ## Training Step:
-Please edit **model** and **data** path for training scripts before runing it.
 
-``` 
-# data_dir=llama_data_dir
-# llama_dir=llama_model_dir
-bash alpaca_lora/scripts/run_train_alpaca.sh
-```
+We can run different manner to support device:
+1. run on **single 40G A100 GPUs**:
+    > several key parameters:
+    > + **data_dir** represents the processed data
+    > + **save_dir** is the data path to save LoRA checkpoint
+    > + **llama_dir** is the model path for processed LLaMA
+    ``` 
+    bash alpaca_lora/scripts/run_train_alpaca.sh
+    ```
+
+2. run on **two 24G 3090 GPUs**:
+    > several key commands:
+    > + **--model-parallel-size** run model parallel by using Megatron-LM
+    ``` 
+    bash alpaca_lora/scripts/run_train_megatron_alpaca.sh
+    ```
 
 ## Infernce Step:
 We support two manner for inference:
@@ -88,18 +109,19 @@ We support two manner for inference:
     bash alpaca_lora/scripts/run_inf_hub.sh
     ```
 
-2. (Batch-Level) Please prepare the test file like [test.src](alpaca_lora/scripts/test.src).
+2. (Batch-Level) Please prepare the test file like [test.src](alpaca_lora/scripts/assert/test.src).
 
-    **Note**: We have to load llama-7b model for inference scripts using command ```--llama-model-inf $llama_dir```.
-
-    ```
-    # prepare data
-    bash alpaca_lora/scripts/prepare_inf_data.sh
-    # run inference
-    # reset the ckpt path 
-    # save_dir=alpaca_lora_model_dir
-    bash alpaca_lora/scripts/run_inf_alpaca.sh
-    ```
+    **Note**: We have to load LoRA model for inference scripts using command ```--lora-model-inf $lora_dir```.
+    1. inference on one GPUs:
+        ```
+        bash alpaca_lora/scripts/utils/prepare_inf_data.sh
+        bash alpaca_lora/scripts/run_inf_alpaca.sh
+        ```
+    2. inference on two GPUs:
+        ```
+        bash alpaca_lora/scripts/utils/prepare_inf_data.sh
+        bash alpaca_lora/scripts/run_inf_megatron_alpaca.sh
+        ```
 
 ## Some Case Sampled by Our Alpaca-LoRA:
 

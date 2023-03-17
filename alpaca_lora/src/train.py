@@ -34,11 +34,11 @@ from fairseq.dataclass.configs import FairseqConfig
 from fairseq.dataclass.initialize import add_defaults
 from fairseq.dataclass.utils import convert_namespace_to_omegaconf
 from fairseq.distributed import fsdp_enable_wrap, fsdp_wrap
-from fairseq.distributed import utils as distributed_utils
 from fairseq.file_io import PathManager
 from fairseq.logging import meters, metrics, progress_bar
-from fairseq.model_parallel.megatron_trainer import MegatronTrainer
+from megatron_trainer import MegatronTrainer
 from trainer import Trainer
+import utils as distributed_utils
 
 
 def main(cfg: FairseqConfig) -> None:
@@ -439,11 +439,14 @@ def validate_and_save(
 
     # Save checkpoint
     if do_save or should_stop:
-        cp_path = checkpoint_utils.save_checkpoint(
-            cfg.checkpoint, trainer, epoch_itr, valid_losses[0]
-        )
-        if cp_path is not None and hasattr(task, "post_save"):
-            task.post_save(cp_path, num_updates)
+        if "model_part" in trainer.checkpoint_suffix and "model_part-0" not in trainer.checkpoint_suffix:
+            print("skip to save checkpoint checkpoint{}.pt".format(trainer.checkpoint_suffix))
+        else:
+            cp_path = checkpoint_utils.save_checkpoint(
+                cfg.checkpoint, trainer, epoch_itr, valid_losses[0]
+            )
+            if cp_path is not None and hasattr(task, "post_save"):
+                task.post_save(cp_path, num_updates)
 
     return valid_losses, should_stop
 

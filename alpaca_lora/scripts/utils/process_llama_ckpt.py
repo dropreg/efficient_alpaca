@@ -67,6 +67,13 @@ def build_llama_state_dict(llama_dir, llama_file):
     # please replace the llama_path with real path
     with open(llama_dir + llama_file, "rb") as f:
         llama_state = torch.load(f, map_location=torch.device("cpu"))
+        
+    # add pad to token weight and predicion weight
+    dict_size, dict_dim = llama_state['tok_embeddings.weight'].size()
+    pad = llama_state['tok_embeddings.weight'].new_zeros([8, dict_dim])
+    llama_state['tok_embeddings.weight'] = torch.cat([llama_state['tok_embeddings.weight'], pad], dim=0)
+    llama_state['output.weight'] = torch.cat([llama_state['output.weight'], pad], dim=0)
+
     state = build_default_state()
     state['model'] = llama_state
     dump_file = "model.pt"
@@ -77,14 +84,14 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--model-dir",
-        required=True,
+        "--llama-model-dir",
         type=str,
         default="/opt/data/private/data/llama/7B/",
         help="path containing model file",
     )
     parser.add_argument(
-        "--model-file",
+        "--llama-model-file",
+        type=str,
         default="consolidated.00.pth",
         help="where in model_dir are weights saved",
     )

@@ -25,6 +25,7 @@ from fairseq.models import (
 
 from fairscale.nn.model_parallel import initialize as mpu
 from fairscale.nn.model_parallel.initialize import initialize_model_parallel
+from fairscale.nn.model_parallel.mappings import scatter_to_model_parallel_region, gather_from_model_parallel_region
 import fairscale.nn.model_parallel.initialize as fs_init
 from fairscale.nn.model_parallel.layers import (
     ParallelEmbedding,
@@ -38,9 +39,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class LLaMAConfig(FairseqDataclass):
-    lora_tuning: bool = field(
-        default=False, metadata={"help": "if using lora tuning"},
-    )
+
     dropout: float = field(default=0.1, metadata={"help": "dropout probability"})
     attention_dropout: float = field(
         default=0.0, metadata={"help": "dropout probability for attention weights"}
@@ -66,15 +65,15 @@ class LLaMA(BaseFairseqModel):
 
         self.decoder = decoder
         self.lora_tuning = lora_tuning
-
+        
         logger.info('model tuning method {}'.format(self.lora_tuning))
         if self.lora_tuning:
             self.mark_only_lora_as_trainable()
 
-        self.llama_model_inf = None
+        self.lora_model_inf = None
 
-    def set_llama_model_inf(self, llama_model_inf):
-        self.llama_model_inf = llama_model_inf
+    def set_lora_model_inf(self, lora_model_inf):
+        self.lora_model_inf = lora_model_inf
 
     def mark_only_lora_as_trainable(self) -> None:
         for n, p in self.named_parameters():
@@ -86,28 +85,33 @@ class LLaMA(BaseFairseqModel):
     @classmethod
     def build_model(cls, args, task):
         """Build a new model instance."""
-
+        
         cls.initialize_model_parallel()
+
+        task.source_dictionary.pad_to_multiple_(torch.distributed.get_world_size() * 8)
+        task.target_dictionary.pad_to_multiple_(torch.distributed.get_world_size() * 8)
+        
+        logger.info("rescale [src] dictionary: {} types and [tgt] dictionary: {} types".format(
+            len(task.source_dictionary), len(task.target_dictionary)))
+
         embed_tokens = cls.build_embedding(
             args, task.target_dictionary, args.decoder_embed_dim
         )
         decoder = LLaMaTransformer(
-            args, task.target_dictionary, embed_tokens, args.lora_tuning
+            args, task.target_dictionary, embed_tokens, task.lora_tuning
         )
-        return cls(decoder, args.lora_tuning) 
-        
+        return cls(decoder, task.lora_tuning) 
+    
     @classmethod
     def initialize_model_parallel(cls):
         logger.info("llama model init process group")
-        
-        if not torch.distributed.is_available():
+
+        if not torch.distributed.is_initialized():
             torch.distributed.init_process_group("nccl")
-        try:
-            mpu.initialize_model_parallel(torch.distributed.get_world_size())
-        except:
-            logger.info("Default process group has not been initialized")
-            torch.distributed.init_process_group("nccl")
-            mpu.initialize_model_parallel(torch.distributed.get_world_size())
+
+        if not mpu.model_parallel_is_initialized():
+            ws = torch.distributed.get_world_size()
+            mpu.initialize_model_parallel(ws)
 
     @classmethod
     def from_pretrained(
@@ -286,33 +290,20 @@ class LLaMA(BaseFairseqModel):
 
     def upgrade_state_dict_named(self, state_dict, name):
         
-        if self.llama_model_inf:
-            logger.info("load llama model from {}".format(self.llama_model_inf))
-            with open(self.llama_model_inf, "rb") as f:
-                llama_state_dict = torch.load(f, map_location=torch.device("cuda"))['model']
-            for k in list(llama_state_dict.keys()):
-                state_dict[k] = llama_state_dict[k]
-                    
+        if self.lora_model_inf:
+            logger.info("load lora model from {}".format(self.lora_model_inf))
+            with open(self.lora_model_inf, "rb") as f:
+                lora_state_dict = torch.load(f, map_location=torch.device("cuda"))['model']
+            for k in list(lora_state_dict.keys()):
+                state_dict[k] = lora_state_dict[k]
+
         if "decoder.embed_tokens.weight" not in state_dict.keys():
             for k in list(state_dict.keys()):
                 if "tok_embeddings.weight" in k:
                     state_dict["decoder.embed_tokens.weight"] = state_dict[k]
-                    state_dict["decoder.embed_tokens.weight"] = torch.cat(
-                        [
-                            state_dict["decoder.embed_tokens.weight"],
-                            self.decoder.embed_tokens.weight[-1].clone().unsqueeze(0).to(state_dict[k]),
-                        ]
-                    )
                     del state_dict[k]
                 elif "output.weight" in k:
-                
                     state_dict["decoder.output_projection.weight"] = state_dict[k]
-                    state_dict["decoder.output_projection.weight"] = torch.cat(
-                        [
-                            state_dict["decoder.output_projection.weight"],
-                            self.decoder.output_projection.weight[-1].clone().unsqueeze(0).to(state_dict[k]),
-                        ]
-                    )
                     del state_dict[k]
                 
                 elif "layers" in k:
@@ -524,7 +515,35 @@ class RMSNorm(torch.nn.Module):
         output = self._norm(x.float()).type_as(x)
         return output * self.weight
 
+class LLaMALoRA(nn.Module):
 
+    def __init__(self, input_dim, output_dim):
+        super().__init__()
+        self.lora_alpha = 32
+        self.r = 4
+        self.scaling = self.lora_alpha / self.r
+
+        self.lora_A = nn.Parameter(torch.zeros((self.r, input_dim)))
+        self.lora_B = nn.Parameter(torch.zeros((output_dim, self.r)))
+        self.reset_lora_parameters()
+
+    def reset_lora_parameters(self):
+        nn.init.kaiming_uniform_(self.lora_A, a=math.sqrt(5))
+        nn.init.zeros_(self.lora_B)
+
+    def forward(self, x):
+        return (x @ self.lora_A.T @ self.lora_B.T) * self.scaling
+
+    def upgrade_state_dict_named(self, state_dict, name):
+        
+        prefix = name + '.lora_A'
+        if prefix not in state_dict:
+            state_dict[prefix] = self.lora_A
+
+        prefix = name + '.lora_B'
+        if prefix not in state_dict:
+            state_dict[prefix] = self.lora_B
+ 
 class LLaMAAttention(nn.Module):
 
     def __init__(self, num_heads, embed_dim, lora_tuning):
@@ -538,52 +557,37 @@ class LLaMAAttention(nn.Module):
 
         self.q_proj = ColumnParallelLinear(
             self.embed_dim,
-            self.num_heads * self.head_dim,
+            self.embed_dim,
             bias=False,
             gather_output=False,
             init_method=lambda x: x,
         )
         self.k_proj = ColumnParallelLinear(
             self.embed_dim,
-            self.num_heads * self.head_dim,
+            self.embed_dim,
             bias=False,
             gather_output=False,
             init_method=lambda x: x,
         )
         self.v_proj = ColumnParallelLinear(
             self.embed_dim,
-            self.num_heads * self.head_dim,
+            self.embed_dim,
             bias=False,
             gather_output=False,
             init_method=lambda x: x,
         )
         self.out_proj = RowParallelLinear(
-            self.num_heads * self.head_dim,
+            self.embed_dim,
             self.embed_dim,
             bias=False,
             input_is_parallel=True,
             init_method=lambda x: x,
         )
+
         if self.lora_tuning:
-            self.lora_alpha = 32
-            self.r = 4
-            self.scaling = self.lora_alpha / self.r
-
-            self.q_lora_A = nn.Parameter(self.q_proj.weight.new_zeros((self.r, self.embed_dim)))
-            self.q_lora_B = nn.Parameter(self.q_proj.weight.new_zeros((self.embed_dim, self.r)))
-            self.k_lora_A = nn.Parameter(self.k_proj.weight.new_zeros((self.r, self.embed_dim)))
-            self.k_lora_B = nn.Parameter(self.k_proj.weight.new_zeros((self.embed_dim, self.r)))
-            self.v_lora_A = nn.Parameter(self.v_proj.weight.new_zeros((self.r, self.embed_dim)))
-            self.v_lora_B = nn.Parameter(self.v_proj.weight.new_zeros((self.embed_dim, self.r)))
-            self.reset_lora_parameters()
-
-    def reset_lora_parameters(self):
-        nn.init.kaiming_uniform_(self.q_lora_A, a=math.sqrt(5))
-        nn.init.kaiming_uniform_(self.k_lora_A, a=math.sqrt(5))
-        nn.init.kaiming_uniform_(self.v_lora_A, a=math.sqrt(5))
-        nn.init.zeros_(self.q_lora_B)
-        nn.init.zeros_(self.k_lora_B)
-        nn.init.zeros_(self.v_lora_B)
+            self.q_lora = LLaMALoRA(self.embed_dim, self.embed_dim)
+            self.k_lora = LLaMALoRA(self.embed_dim, self.embed_dim)
+            self.v_lora = LLaMALoRA(self.embed_dim, self.embed_dim)
 
     def apply_rotary_emb(
         self,
@@ -643,11 +647,17 @@ class LLaMAAttention(nn.Module):
         q = self.q_proj(query)
         k = self.k_proj(key_value)
         v = self.v_proj(key_value)
-        if self.lora_tuning:
-            q += (query @ self.q_lora_A.T @ self.q_lora_B.T) * self.scaling
-            k += (key_value @ self.k_lora_A.T @ self.k_lora_B.T) * self.scaling
-            v += (key_value @ self.v_lora_A.T @ self.v_lora_B.T) * self.scaling
 
+        if self.lora_tuning:
+            
+            q = gather_from_model_parallel_region(q) + self.q_lora(query)
+            k = gather_from_model_parallel_region(k) + self.k_lora(key_value)
+            v = gather_from_model_parallel_region(v) + self.v_lora(key_value)
+
+            q = scatter_to_model_parallel_region(q)
+            k = scatter_to_model_parallel_region(k)
+            v = scatter_to_model_parallel_region(v)
+        
         q = q.view(bsz, tgt_len, self.local_num_heads, self.head_dim)
         k = k.view(bsz, src_len, self.local_num_heads, self.head_dim)
         v = v.view(bsz, src_len, self.local_num_heads, self.head_dim)
@@ -657,8 +667,7 @@ class LLaMAAttention(nn.Module):
         q = q.transpose(1, 2)
         k = k.transpose(1, 2)
         v = v.transpose(1, 2)
-        # bsz, local_num_heads, tgt_len, head_dim
-        # -> bsz, local_num_heads, tgt_len, src_len
+
         attn_scores = torch.matmul(q, k.transpose(2, 3)) / math.sqrt(self.head_dim)
         
         if attn_mask is not None:
@@ -673,28 +682,6 @@ class LLaMAAttention(nn.Module):
         output = output.transpose(1, 2).contiguous().view(bsz, tgt_len, -1)
         
         return self.out_proj(output), attn_softmax_scores
-
-    def upgrade_state_dict_named(self, state_dict, name):
-        if self.lora_tuning:
-            prefix = name + '.q_lora_A'
-            if prefix not in state_dict:
-                state_dict[prefix] = self.q_lora_A
-            prefix = name + '.k_lora_A'
-            if prefix not in state_dict:
-                state_dict[prefix] = self.k_lora_A
-            prefix = name + '.v_lora_A'
-            if prefix not in state_dict:
-                state_dict[prefix] = self.v_lora_A
-
-            prefix = name + '.q_lora_B'
-            if prefix not in state_dict:
-                state_dict[prefix] = self.q_lora_B
-            prefix = name + '.k_lora_B'
-            if prefix not in state_dict:
-                state_dict[prefix] = self.k_lora_B
-            prefix = name + '.v_lora_B'
-            if prefix not in state_dict:
-                state_dict[prefix] = self.v_lora_B
 
 class LLaMAFeedForward(nn.Module):
 
