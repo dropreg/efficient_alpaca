@@ -33,7 +33,7 @@ You can download it from [huggingface website](https://huggingface.co/dropreg/ef
 | Model                 | Device      | Link     |
 |:----------------------|:-----------:|:--------:|
 | Alpaca_LoRA (epoch=3) | 1 40G A100 | [link](https://huggingface.co/dropreg/efficient_alpaca/resolve/main/alpaca_lora.pt) |
-| Alpaca_MagetronLM_LoRA (epoch=3) | 2 23G A100 | [link](https://huggingface.co/dropreg/efficient_alpaca/resolve/main/alpaca_megatron_lora.pt) |
+| Alpaca_MagetronLM_LoRA (epoch=3) | 2 24G 3090 | [link](https://huggingface.co/dropreg/efficient_alpaca/resolve/main/alpaca_megatron_lora.pt) |
 
 ## Setup
 Ensure the pytorch and cuda environment available, and install fllowing dependences:
