@@ -6,7 +6,7 @@
 
 The aim of this repository is to utilize LLaMA to reproduce and enhance the Stanford Alpaca, including but not limited to **reducing resource consumption**, **improving inference speed**, and more **facilitating researchers' use** (especially for fairseq users). This project will be constantly updated and maintained. Please feel free to use it!
 
-+ Efficient Alpaca support the reproduction of Stanford Alpaca through fine-tuning LLaMA-7B on ``8 40G A100 GPU``, in which we split the original model weight (LLaMA-7B) into 8 fragment using Megatron-LM to train.
++ Efficient Alpaca support the reproduction of Stanford Alpaca through fine-tuning LLaMA-7B on ``8 40G A100 GPUs``, in which we split the original model weight (LLaMA-7B) into 8 fragments using Megatron-LM.
 + Efficient Alpaca is capable of reproducing the Stanford Alpaca model using only the LoRA parameters, which occupy a significantly smaller space of 37M.
 + Efficient Alpaca employs a more efficient tuning approach known as LoRA, which yields faster training times, taking only 30 minutes per epoch.
 + Efficient Alpaca supports various GPU devices, including: ``1 40G A100 GPU`` or ``2 24G 3090 GPUs``.

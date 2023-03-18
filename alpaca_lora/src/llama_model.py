@@ -291,11 +291,12 @@ class LLaMA(BaseFairseqModel):
     def upgrade_state_dict_named(self, state_dict, name):
         
         if self.lora_tuning and self.lora_model_inf is not None:
-            logger.info("load lora model from {}".format(self.lora_model_inf))
-            with open(self.lora_model_inf, "rb") as f:
-                lora_state_dict = torch.load(f, map_location=torch.device("cuda"))['model']
-            for k in list(lora_state_dict.keys()):
-                state_dict[k] = lora_state_dict[k]
+            if os.path.exists(self.lora_model_inf):
+                logger.info("load lora model from {}".format(self.lora_model_inf))
+                with open(self.lora_model_inf, "rb") as f:
+                    lora_state_dict = torch.load(f, map_location=torch.device("cuda"))['model']
+                for k in list(lora_state_dict.keys()):
+                    state_dict[k] = lora_state_dict[k]
 
         if "decoder.embed_tokens.weight" not in state_dict.keys():
             for k in list(state_dict.keys()):
