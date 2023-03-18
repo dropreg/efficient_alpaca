@@ -436,10 +436,10 @@ def validate_and_save(
         valid_losses = validate(cfg, trainer, task, epoch_itr, valid_subsets)
 
     should_stop |= should_stop_early(cfg, valid_losses[0])
-
+    
     # Save checkpoint
     if do_save or should_stop:
-        if "model_part" in trainer.checkpoint_suffix and "model_part-0" not in trainer.checkpoint_suffix:
+        if task.lora_tuning and "model_part" in trainer.checkpoint_suffix and "model_part-0" not in trainer.checkpoint_suffix:
             print("skip to save checkpoint checkpoint{}.pt".format(trainer.checkpoint_suffix))
         else:
             cp_path = checkpoint_utils.save_checkpoint(

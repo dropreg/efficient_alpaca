@@ -6,6 +6,7 @@
 
 The aim of this repository is to utilize LLaMA to reproduce and enhance the Stanford Alpaca, including but not limited to **reducing resource consumption**, **improving inference speed**, and more **facilitating researchers' use** (especially for fairseq users). This project will be constantly updated and maintained. Please feel free to use it!
 
++ Efficient Alpaca support the reproduction of Stanford Alpaca through fine-tuning LLaMA-7B on ``8 40G A100 GPU``, in which we split the original model weight (LLaMA-7B) into 8 fragment using Megatron-LM to train.
 + Efficient Alpaca is capable of reproducing the Stanford Alpaca model using only the LoRA parameters, which occupy a significantly smaller space of 37M.
 + Efficient Alpaca employs a more efficient tuning approach known as LoRA, which yields faster training times, taking only 30 minutes per epoch.
 + Efficient Alpaca supports various GPU devices, including: ``1 40G A100 GPU`` or ``2 24G 3090 GPUs``.
@@ -82,10 +83,18 @@ make install
     bash alpaca_lora/scripts/utils/prepare_llama_training_data.sh
     ```
 
-## Training Step:
+## Fine-tunning Step:
+
+1. Run on **8 40G A100 GPUs**: 
+
+    To obtain 8 fragment of LLaMA-7B, we need run ``alpaca_lora/scripts/utils/process_llama_megatron_ckpt.py`` with parameter ``--parallel-size 8``.
+    ```
+    bash alpaca_lora/scripts/run_train_megatron_alpaca_ft.sh
+    ```
+## Training Step with LoRA:
 
 We can run different manner to support device:
-1. run on **single 40G A100 GPUs**:
+1. Run on **single 40G A100 GPUs**:
     > several key parameters:
     > + **data_dir** represents the processed data
     > + **save_dir** is the data path to save LoRA checkpoint
@@ -94,7 +103,7 @@ We can run different manner to support device:
     bash alpaca_lora/scripts/run_train_alpaca.sh
     ```
 
-2. run on **two 24G 3090 GPUs**:
+2. Run on **two 24G 3090 GPUs**:
     > several key commands:
     > + **--model-parallel-size** run model parallel by using Megatron-LM
     ``` 
@@ -121,6 +130,8 @@ We support two manner for inference:
         ```
         bash alpaca_lora/scripts/utils/prepare_inf_data.sh
         bash alpaca_lora/scripts/run_inf_megatron_alpaca.sh
+        # run 8 fragment inferece:
+        bash alpaca_lora/scripts/run_inf_megatron_alpaca_ft.sh
         ```
 
 ## Some Case Sampled by Our Alpaca-LoRA:

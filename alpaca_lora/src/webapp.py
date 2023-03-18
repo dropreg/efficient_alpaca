@@ -29,6 +29,12 @@ if __name__ == "__main__":
         default="checkpoint_best.pt",
         help="where in model_dir are weights saved",
     )
+    parser.add_argument(
+        "--lora-tuning",
+        action="store_true",
+        default=False,
+        help="if true use XSUM_KWARGS else CNN_KWARGS",
+    )
     parser.add_argument("--bpe",)
     parser.add_argument("--sentencepiece-model")
     args = parser.parse_args()
@@ -40,7 +46,7 @@ if __name__ == "__main__":
         "sentencepiece_model": args.sentencepiece_model,
         "source_lang": 'src',
         "target_lang": 'tgt',
-        "lora_tuning": True,
+        "lora_tuning": args.lora_tuning,
     }
     alpaca = LLaMA.from_pretrained(
         model_name_or_path=args.model_dir,

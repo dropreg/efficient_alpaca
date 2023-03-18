@@ -65,6 +65,7 @@ def build_default_state():
 
 DICT_MAP = {
     2: 32016,
+    8: 32064,
 }
 
 def split_parameter(llama_state, parallel_size):
@@ -79,7 +80,7 @@ def split_parameter(llama_state, parallel_size):
 
     embed_size = dict_dim // parallel_size
     ffn_embed_size = (256 * ((int(2 * dict_dim * 4 / 3) + 256 - 1) // 256)) // parallel_size
-    parallel_dict_size = incr_dict_size // 2
+    parallel_dict_size = incr_dict_size // parallel_size
 
     for parallel_idx in range(parallel_size):
         parallel_state = {}
@@ -139,7 +140,7 @@ def build_llama_state_dict(llama_dir, llama_file, parallel_size):
     for parallel_idx, parallel_state in enumerate(split_parameter(llama_state, parallel_size)):
         state['model'] = parallel_state
         dump_file = "model-model_part-{}.pt".format(parallel_idx)
-        torch.save(state, llama_dir + dump_file)
+        torch.save(state, llama_dir + 'megatron_{}/'.format(parallel_size) + dump_file)
         print("dump new model to {}{}".format(llama_dir, dump_file))
 
 def main():
