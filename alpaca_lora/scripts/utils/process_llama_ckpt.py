@@ -97,8 +97,8 @@ def main():
     )
 
     args = parser.parse_args()
-    print("load model from {}{}".format(args.model_dir, args.model_file))
-    build_llama_state_dict(args.model_dir, args.model_file)
+    print("load model from {}{}".format(args.llama_model_dir, args.llama_model_file))
+    build_llama_state_dict(args.llama_model_dir, args.llama_model_file)
 
 
 if __name__ == "__main__":
