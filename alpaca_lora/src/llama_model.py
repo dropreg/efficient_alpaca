@@ -201,7 +201,7 @@ class LLaMA(BaseFairseqModel):
         else:
             return utils.softmax(logits, dim=-1)
         
-    def forward(self, src_tokens, src_lengths, src_pos, tgt_pos, prev_output_tokens):
+    def forward(self, src_tokens, src_lengths, src_pos, tgt_pos, tgt_tokens):
         
         src_x, src_padding, src_attn, src_hiddens = self.decoder(
             prev_output_tokens=src_tokens,
@@ -215,7 +215,7 @@ class LLaMA(BaseFairseqModel):
             incremental_state[layer_idx]['key'] = layer_hidden_states
 
         tgt_x, tgt_padding, tgt_attn, tgt_hiddens = self.decoder(
-            prev_output_tokens=prev_output_tokens,
+            prev_output_tokens=tgt_tokens,
             incremental_state=incremental_state,
             src_pos=src_pos,
             tgt_pos=tgt_pos,
@@ -410,7 +410,7 @@ class LLaMaTransformer(nn.Module):
     ):
         
         if incremental_state is not None and trunc_flg:
-                prev_output_tokens = prev_output_tokens[:, -1:]
+            prev_output_tokens = prev_output_tokens[:, -1:]
         
         bsz, target_len = prev_output_tokens.size()
         x = self.embed_tokens(prev_output_tokens)
