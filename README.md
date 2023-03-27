@@ -83,6 +83,13 @@ make install
     bash alpaca_lora/scripts/utils/prepare_llama_training_data.sh
     ```
 
+5. We also support merge all Megatron checkpoint part to one Alpaca checkpoint.
+    
+    ```
+    python alpaca_lora/scripts/utils/merge_llama_megatron_ckpt.py --llama-model-dir $llama_dir --parallel-size 8 --prefix checkpoint_1_15000-model_part-{}.pt
+    ```
+
+
 ## Fine-tunning Step:
 
 1. Run on **8 40G A100 GPUs**: 
