@@ -1,5 +1,5 @@
 import torch
-import json
+import os
 import argparse
 
 
@@ -140,7 +140,7 @@ def build_llama_state_dict(llama_dir, llama_file, parallel_size):
     for parallel_idx, parallel_state in enumerate(split_parameter(llama_state, parallel_size)):
         state['model'] = parallel_state
         dump_file = "model-model_part-{}.pt".format(parallel_idx)
-        torch.save(state, llama_dir + 'megatron_{}/'.format(parallel_size) + dump_file)
+        torch.save(state, os.path.join(llama_dir + 'megatron_{}/'.format(parallel_size)) + dump_file)  
         print("dump new model to {}{}".format(llama_dir, dump_file))
 
 def main():
