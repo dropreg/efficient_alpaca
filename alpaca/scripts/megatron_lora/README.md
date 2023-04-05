@@ -15,5 +15,5 @@ bash alpaca/scripts/megatron_lora/run_train_megatron_lora.sh
 + (Batch-Level) Please prepare the test file.
 
     ```
-    bash alpaca/scripts/lora/inference/run_inf_megatron_lora.sh
+    bash alpaca/scripts/megatron_lora/inference/run_inf_megatron_lora.sh
     ```
