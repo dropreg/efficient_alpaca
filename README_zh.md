@@ -94,7 +94,7 @@ make install
 
 ## 数据和模型处理
 
-+ [Data Preprocess](alpaca/scripts/utils/README.md)
++ [Data and Model Preprocess](alpaca/scripts/utils/README.md)
 
 ## 训练模型
 

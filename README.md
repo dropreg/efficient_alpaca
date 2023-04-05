@@ -1,5 +1,5 @@
 <p align="center" width="100%">
-<img src="efficient_alpaca_logo.PNG" alt="Efficient-Alpaca" style="width: 50%; min-width: 300px; display: block; margin: auto;">
+<img src="efficient_alpaca_logo.PNG" alt="Efficient-Alpaca" style="width: 40%; min-width: 300px; display: block; margin: auto;">
 </p>
 
 <h2 align="center">
@@ -17,7 +17,7 @@ The aim of Efficient Alpaca is to utilize LLaMA to build and enhance the LLM-bas
 
 
 **************************** Updates ****************************
-- 4/2 We support Fine-tuning using FSDP to reduce GPU memory with extra RAM memory !
+- 4/5 We support Fine-tuning using FSDP to reduce GPU memory with extra RAM memory !
 - 3/17 We support model parallel to reduce GPU memory using Megatron-LM !
 - 3/15 We support LoRA (Efficient-finetuning) to reproduce Stanford Alpaca !
 
@@ -92,7 +92,7 @@ make install
 
 ## Prepare Model and Data
 
-+ [Data Preprocess](alpaca/scripts/utils/README.md)
++ [Data and Model Preprocess](alpaca/scripts/utils/README.md)
 
 ## Training Step:
 
