@@ -1,6 +1,7 @@
 <p align="center" width="100%">
-<img src="efficient_alpaca_logo.PNG" alt="Efficient-Alpaca" style="width: 50%; min-width: 300px; display: block; margin: auto;">
+<img src="efficient_alpaca_logo.PNG" alt="Efficient-Alpaca" style="width: 40%; min-width: 300px; display: block; margin: auto;">
 </p>
+
 
 <h2 align="center">
     <p>Efficient Alpaca</p>
@@ -8,32 +9,30 @@
 
 <h4 align="center">
     <p>
-        <b>English</b> | <a href="https://github.com/dropreg/efficient_alpaca/blob/main/README_zh.md">中文</a>
+        <a href="https://github.com/dropreg/efficient_alpaca/blob/main/README.md">English</a> | <b>中文</b>
     <p>
 </h4>
 
+Efficient Alpaca 的目的是为了方便构建或者增强基于 LLMs 的 Chatbots，其功能包括但不限于 **减少资源使用 （GPU 显存，训练时间）**，**推理速度**，**方便开发者使用（尤其是熟悉 Fairseq 的用户）**。项目会持续更新，欢迎使用！
 
-The aim of Efficient Alpaca is to utilize LLaMA to build and enhance the LLM-based chatbots, including but not limited to **reducing resource consumption (GPU memory or training time)**, **improving inference speed**, and more **facilitating researchers' use** (especially for fairseq users). This project will be constantly updated and maintained. Please feel free to use it!
-
-
-**************************** Updates ****************************
-- 4/2 We support Fine-tuning using FSDP to reduce GPU memory with extra RAM memory !
-- 3/17 We support model parallel to reduce GPU memory using Megatron-LM !
-- 3/15 We support LoRA (Efficient-finetuning) to reproduce Stanford Alpaca !
+**************************** 更新记录 ****************************
+- 4/5 我们支持 FSDP 进行 Fine-tuning，可以使用额外内存来减少 GPU 显存占用！
+- 3/17 我们支持使用 Megatron-LM 来减少 GPU 显存，包括 Fine-tuning 和 Efficient-finetuning !
+- 3/15 我们支持使用 LoRA 来进行 Efficient-finetuning 来复现 Stanford Alpaca !
 
 
-# Supported Inference Devices
+## 可供选择的推理设备
 
-we can choose following device to support inference, even 12G 1080.
+你可以选择下面的任意设备来支持推理，即使是 12G 的 1080。
 
 | Method   | Support       | Device     | GPU     | Inference Speed     |
 | -------- | ------------- | ---------- | ------- | ------------------- |
 | Original | all           | 1 24G 3090 |  14G    |                     |
 | Megatron | megatron_lora | 2 12G 1080 |  8G     |                     |
 
-## Supported Training Methods and Devices
+## 可供选择的训练方法和设备
 
-We can choose the following available methods and combinations: for example, I have 2 24G 3090 and a lot of memory, at this time you can have two options: 1. Use Megatron-LM for Efficient-Finetuning (does not use a lot of memory) . 2. Use FSDP for Fine-tuning (it will use a lot of extra memory).
+你可以根据下标的组合来选择可用方法：例如，我有两块3090和大量的内存，这个时候你可以有两种选择：1. 使用Megatron-LM 来进行 Efficient-Finetuning（不会使用大量内存）。 2. 使用 FSDP 来进行 Fine-tuning （会使用额外大量内存）。
 
 | Method        | Type                  | Support       | Data Para | Model Para | Device     | GPU     | Memory Limit  | Training Speed      |
 | ------------- | --------------------- | ------------- | --------- | ---------- | ---------- | ------- | ------------- | ------------------- |
@@ -46,21 +45,23 @@ We can choose the following available methods and combinations: for example, I h
 | Megatron      | Fine-tuning           | megatron      | &cross;   | &check;    | 4 40G A100 |  25G    | No            | 130 sec / 100 step  |
 |               |                       |               |           |            | 8 24G 3090 |  14G    | No            | 130 sec / 100 step  |
 
-<details><summary>Some Explanation about Support Table.</summary><p>
 
-All evaluation used hyper-parameter --max-tokens 2048.
+<details><summary>关于表格的解释</summary><p>
 
-* Data Para: Whether to support data parallel.
-* Model Para: Whether to support model parallel.
-* GPU: GPU Memory usage of each node during training.
-* Memory Limit: RAM Memory usage during training.
-* Training Speed: Only represents training speed rather than training time, because data parallel supports to accelerate training.
+以上所有的实验都是使用 --max-tokens 2048 这一参数进行测试.
+
+* Data Para: 是否支持数据并行.
+* Model Para: 是否支持模型并行.
+* GPU: 在训练中实际大概使用的 GPU 显存.
+* Memory Limit: 内存限制，只是大概的测试，并不代表实际情况.
+* Training Speed: 仅仅代表训练速度而非训练时间，比如数据并行可以加快训练时间，但是并不会加快训练速度。
 
 </p></details>
 
-## Web Interface
 
-We support web interface using [Gradio](https://gradio.app/)。 
+## 进行演示
+
+我们支持使用 [Gradio](https://gradio.app/) 来进行演示。 
 
 ```
 bash  alpaca_lora/scripts/run_webapp.sh
@@ -70,15 +71,16 @@ bash  alpaca_lora/scripts/run_webapp.sh
 <img src="webapp.PNG" alt="Examples" style="width: 60%; min-width: 300px; display: block; margin: auto;">
 </p>
 
-## Setup
-Ensure the pytorch and cuda environment available, and install fllowing dependences:
+
+## 环境依赖
+请确保你有正常的CUDA环境，并安装以下依赖:
 
 ```
 pip install fairseq
 pip install fairscale
 ```
 
-We have to install sentencepiece from [official repo](https://github.com/google/sentencepiece) to process data or hack for your specific task.
+如果要训练模型，请安装 sentencepiece [official repo](https://github.com/google/sentencepiece) 来处理数据。
 
 ```
 git clone https://github.com/google/sentencepiece.git 
@@ -90,11 +92,11 @@ make -j $(nproc)
 make install
 ```
 
-## Prepare Model and Data
+## 数据和模型处理
 
 + [Data Preprocess](alpaca/scripts/utils/README.md)
 
-## Training Step:
+## 训练模型
 
 Efficient-Finetuning
 + [LoRA](alpaca/scripts/lora/README.md)
@@ -104,8 +106,7 @@ Fine-tuning
 + [Megatron](alpaca/scripts/megatron/README.md)
 + [Fully Sharded Data Parallel](alpaca/scripts/fsdp/README.md)
 
-
-## Some Case Sampled by Our Model:
+## 模型输出示例:
 
 1. **Question**: what is the capital of china?
 
@@ -165,7 +166,7 @@ Fine-tuning
 
 ## Reference
 
-
+In addition, thanks to the open source projects and communities that this project relies on, including but not limited to the following:
 
 Fairseq: a sequence modeling toolkit \[[github](https://github.com/facebookresearch/fairseq)\]
 ```
