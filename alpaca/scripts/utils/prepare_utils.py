@@ -4,7 +4,7 @@ import argparse
 
 def split_json(alpaca_data):
 
-    json_data = json.load(open(alpaca_data))
+    json_data = json.load(open(alpaca_data, encoding="utf-8"))
     print("load aplaca data number = {}".format(len(json_data)))
     train_src = alpaca_data.replace("alpaca_data.json", 'train.src')
     train_tgt = alpaca_data.replace("alpaca_data.json", 'train.tgt')
@@ -51,7 +51,7 @@ def split_zh_json(alpaca_data):
     prompt_no_input_text = "## Instruction:\n{}\n\n## Response:"
     
     with open(train_src, 'w') as f_src, open(train_tgt, 'w') as f_tgt:
-        for lines in open(alpaca_data).readlines():
+        for lines in open(alpaca_data, encoding="utf-8").readlines():
             data = json.loads(lines)
             if len(data['input']) > 0:
                 src = prompt_text.format(data['instruction'].strip(), data['input'].strip()).strip()
